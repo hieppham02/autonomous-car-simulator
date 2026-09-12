@@ -1,1 +1,1 @@
-# Khung mô phỏng xe di chuyển theo đường đi.
+# Mô phỏng xe di chuyển theo đường đi.

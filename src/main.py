@@ -1,1 +1,4 @@
-# Điểm khởi chạy chương trình. Sẽ triển khai ở bước giao diện.
+import sys
+
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")

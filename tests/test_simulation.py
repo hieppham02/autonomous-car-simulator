@@ -1,1 +1,1 @@
-# Khung kiểm thử mô phỏng xe.
+# Kiểm thử mô phỏng xe.

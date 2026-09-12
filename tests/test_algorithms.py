@@ -1,1 +1,1 @@
-# Khung kiểm thử các thuật toán tìm đường.
+# Kiểm thử các thuật toán tìm đường.

@@ -1,1 +1,1 @@
-# Khung BFS, Dijkstra và A*.
+# Thuật toán BFS, Dijkstra và A*.
