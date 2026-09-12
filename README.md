@@ -1,6 +1,6 @@
 # Mô phỏng điều khiển xe tự động bằng BFS, Dijkstra và A*
 
-Đồ án môn Trí tuệ nhân tạo: mô phỏng xe di chuyển trên bản đồ dạng lưới, lập kế hoạch đường đi bằng BFS, Dijkstra hoặc A*, sau đó trực quan hóa và so sánh kết quả.
+Bài tập lớn môn Trí tuệ nhân tạo: mô phỏng xe di chuyển trên bản đồ dạng lưới, lập kế hoạch đường đi bằng BFS, Dijkstra hoặc A*, sau đó trực quan hóa và so sánh kết quả.
 
 ## Trạng thái
 
