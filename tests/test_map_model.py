@@ -1,1 +1,1 @@
-# Khung kiểm thử mô hình bản đồ.
+# Kiểm thử mô hình bản đồ.
