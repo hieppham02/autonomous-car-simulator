@@ -1,6 +1,6 @@
 import unittest
 
-from src.algorithms import bfs
+from src.algorithms import a_star, bfs, dijkstra
 from src.map_model import GridMap
 
 
@@ -24,6 +24,15 @@ class BFSTests(unittest.TestCase):
         grid.obstacles.update({(1, 2), (2, 1)})
 
         self.assertIsNone(bfs(grid))
+
+    def test_future_algorithms_are_placeholders(self):
+        grid = GridMap(2, 2)
+
+        with self.assertRaises(NotImplementedError):
+            dijkstra(grid)
+
+        with self.assertRaises(NotImplementedError):
+            a_star(grid)
 
 
 if __name__ == "__main__":

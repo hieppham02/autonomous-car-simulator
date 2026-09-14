@@ -1,6 +1,5 @@
 from collections import deque
 
-
 class Node:
     def __init__(self, position, parent=None, g=0, h=0):
         self.position = position
@@ -22,7 +21,18 @@ class Node:
         return path
 
 
+def validate_grid(grid):
+    if grid.start is None or grid.goal is None:
+        raise ValueError("Bản đồ phải có điểm bắt đầu và điểm đích")
+
+    if not grid.is_inside(grid.start) or not grid.is_inside(grid.goal):
+        raise ValueError("Điểm bắt đầu hoặc điểm đích nằm ngoài bản đồ")
+
+    if grid.is_obstacle(grid.start) or grid.is_obstacle(grid.goal):
+        raise ValueError("Điểm bắt đầu hoặc điểm đích không thể là vật cản")
+
 def bfs(grid):
+    validate_grid(grid)
     start_node = Node(grid.start)
 
     queue = deque([start_node])
@@ -47,3 +57,13 @@ def bfs(grid):
                 queue.append(neighbor_node)
 
     return None
+
+
+def dijkstra(grid):
+    """Hàm chờ cho thuật toán Dijkstra."""
+    raise NotImplementedError("Thuật toán Dijkstra chưa được cài đặt")
+
+
+def a_star(grid):
+    """Hàm chờ cho thuật toán A*."""
+    raise NotImplementedError("Thuật toán A* chưa được cài đặt")

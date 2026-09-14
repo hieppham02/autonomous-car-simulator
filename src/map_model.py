@@ -5,7 +5,6 @@ class GridMap:
         self.start = None
         self.goal = None
         self.obstacles = set()
-        self.costs = {}
 
     # Kiểm tra xem một vị trí có nằm trong bản đồ hay không
     def is_inside(self, position):
@@ -18,10 +17,6 @@ class GridMap:
     # Kiểm tra xem một vị trí có phải là vật cản hay không
     def is_obstacle(self, position):
         return position in self.obstacles
-
-    # Lấy chi phí đi vào một ô trên bản đồ
-    def get_cost(self, position):
-        return self.costs.get(position, 1)
 
     # Lấy các ô hàng xóm có thể đi đến theo 4 hướng
     def get_neighbors(self, position):
