@@ -7,44 +7,41 @@ class GridMap:
         self.obstacles = set()
         self.costs = {}
 
-    # Hàm kiểm tra xem một vị trí có nằm trong bản đồ hay không
-    def is_inside(self, position: tuple[int, int]):
+    # Kiểm tra xem một vị trí có nằm trong bản đồ hay không
+    def is_inside(self, position):
         row, column = position
         return (
-            0 <= row and row < self.rows 
-            and 
-            0 <= column and column < self.columns
+            0 <= row < self.rows
+            and 0 <= column < self.columns
         )
 
-    # Hàm kiểm tra xem một vị trí có phải là chướng ngại vật hay không
-    def is_obstacle(self, position: tuple[int, int]):
-        # Kiểm tra xem vị trí có nằm trong tập hợp các vị trí chướng ngại vật hay không
-        return position in self.obstacles 
-    
-    # Hàm lấy chi phí cho một vị trí trên bản đồ
+    # Kiểm tra xem một vị trí có phải là vật cản hay không
+    def is_obstacle(self, position):
+        return position in self.obstacles
+
+    # Lấy chi phí đi vào một ô trên bản đồ
     def get_cost(self, position):
         return self.costs.get(position, 1)
 
-    # Hàm đặt chi phí cho một vị trí trên bản đồ
-    def set_cost(self, position, cost):
-        if cost <= 0:
-            raise ValueError("Chi phí phải lớn hơn 0")
-        self.costs[position] = cost
-    
-# def main():
-#     grid = GridMap(5, 6)
+    # Lấy các ô hàng xóm có thể đi đến theo 4 hướng
+    def get_neighbors(self, position):
+        row, column = position
+        directions = [
+            (-1, 0),  # Lên
+            (1, 0),   # Xuống
+            (0, -1),  # Trái
+            (0, 1)    # Phải
+        ]
+        neighbors = []
+        for delta_row, delta_column in directions:
+            next_position = (
+                row + delta_row,
+                column + delta_column
+            )
+            if (
+                self.is_inside(next_position)
+                and not self.is_obstacle(next_position)
+            ):
+                neighbors.append(next_position)
 
-#     print(grid.is_inside((2, 3)))
-#     print(grid.is_inside((8, 3)))
-
-#     grid.obstacles.add((1, 2))
-
-#     print(grid.is_obstacle((1, 2)))
-#     print(grid.is_obstacle((0, 0)))
-
-#     grid.set_cost((2, 2), 5)
-#     print(grid.get_cost((2, 2)))
-#     print(grid.get_cost((0, 0)))
-
-# if __name__ == "__main__":
-#     main()
+        return neighbors
