@@ -31,20 +31,20 @@ class GridMap:
             raise ValueError("Chi phí phải lớn hơn 0")
         self.costs[position] = cost
     
-def main():
-    grid = GridMap(5, 6)
+# def main():
+#     grid = GridMap(5, 6)
 
-    print(grid.is_inside((2, 3)))
-    print(grid.is_inside((8, 3)))
+#     print(grid.is_inside((2, 3)))
+#     print(grid.is_inside((8, 3)))
 
-    grid.obstacles.add((1, 2))
+#     grid.obstacles.add((1, 2))
 
-    print(grid.is_obstacle((1, 2)))
-    print(grid.is_obstacle((0, 0)))
+#     print(grid.is_obstacle((1, 2)))
+#     print(grid.is_obstacle((0, 0)))
 
-    grid.set_cost((2, 2), 5)
-    print(grid.get_cost((2, 2)))
-    print(grid.get_cost((0, 0)))
+#     grid.set_cost((2, 2), 5)
+#     print(grid.get_cost((2, 2)))
+#     print(grid.get_cost((0, 0)))
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
