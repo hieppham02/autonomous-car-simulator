@@ -11,52 +11,55 @@ class GridMap:
         self.start = None
         self.goal = None
         self.obstacles = set()
-        self.costs = {}
+        self.weights = {}
 
-    # Hàm kiểm tra xem một vị trí có nằm trong bản đồ hay không
-    def is_inside(self, position: tuple[int, int]):
+    # Kiểm tra xem một vị trí có nằm trong bản đồ hay không
+    def is_inside(self, position):
         row, column = position
         return (
-            0 <= row and row < self.rows
-            and
-            0 <= column and column < self.columns
+            0 <= row < self.rows
+            and 0 <= column < self.columns
         )
 
-    # Hàm kiểm tra xem một vị trí có phải là chướng ngại vật hay không
-    def is_obstacle(self, position: tuple[int, int]):
-        # Kiểm tra xem vị trí có nằm trong tập hợp các vị trí chướng ngại vật hay không
+    # Kiểm tra xem một vị trí có phải là vật cản hay không
+    def is_obstacle(self, position):
         return position in self.obstacles
 
-    # Hàm lấy chi phí cho một vị trí trên bản đồ
-    def get_cost(self, position):
-        return self.costs.get(position, 1)
+    def weight_at(self, position):
+        """Return traversal cost for a cell; normal cells cost one."""
+        return max(1, self.weights.get(position, 1))
 
-    # Hàm đặt chi phí cho một vị trí trên bản đồ
-    def set_cost(self, position, cost):
-        try:
-            if cost <= 0:
-                raise ValueError("Chi phí phải lớn hơn 0")
-            self.costs[position] = cost
-        except ValueError as e:
-            print(f"Lỗi: {e}")
-            
+    def set_weight(self, position, weight):
+        if not self.is_inside(position) or position in self.obstacles:
+            return
+        weight = max(1, int(weight))
+        if weight == 1:
+            self.weights.pop(position, None)
+        else:
+            self.weights[position] = weight
 
-def main():
-    grid = GridMap(5, 6)
+    def clear_weights(self):
+        self.weights.clear()
 
-    print(grid.is_inside((2, 3)))
-    print(grid.is_inside((8, 3)))
+    # Lấy các ô hàng xóm có thể đi đến theo 4 hướng
+    def get_neighbors(self, position):
+        row, column = position
+        directions = [
+            (-1, 0),  # Lên
+            (1, 0),   # Xuống
+            (0, -1),  # Trái
+            (0, 1)    # Phải
+        ]
+        neighbors = []
+        for delta_row, delta_column in directions:
+            next_position = (
+                row + delta_row,
+                column + delta_column
+            )
+            if (
+                self.is_inside(next_position)
+                and not self.is_obstacle(next_position)
+            ):
+                neighbors.append(next_position)
 
-    grid.obstacles.add((1, 2))
-
-    print(grid.is_obstacle((1, 2)))
-    print(grid.is_obstacle((0, 0)))
-
-    # Tại node n = (2, 3) có cost c(n) = 5
-    grid.set_cost((2, 3), 5)
-    print(grid.get_cost((2, 3)))
-    print(grid.get_cost((0, 0)))
-
-
-if __name__ == "__main__":
-    main()
+        return neighbors
