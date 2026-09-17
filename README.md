@@ -33,7 +33,7 @@ Kiểm tra tự động (bao gồm Pygame headless):
 py -m unittest discover -s tests -p "test_*.py" -v
 ```
 
-## Cấu trúc
+## Cấu trúc chương trình
 
 - `docs/`: đặc tả bài toán, kiến trúc và kế hoạch thực hiện.
 - `src/main.py`: xử lý sự kiện và vòng lặp ứng dụng.
@@ -46,17 +46,18 @@ py -m unittest discover -s tests -p "test_*.py" -v
 - `tests/`: kiểm thử thuật toán và mô phỏng.
 - `reports/`: kết quả đo và tài liệu báo cáo.
 
-## Phạm vi phiên bản đầu
+## Phạm vi chương trình
 
 - Bản đồ ô vuông 2D, di chuyển 4 hướng.
 - Vật cản; mỗi bước di chuyển có chi phí bằng 1.
 - Ba thuật toán: BFS, Dijkstra, A*.
 - Xe chạy theo đường đã tìm; phần nhận diện cảm biến/vật lý thực không thuộc phiên bản đầu.
+- 
 ## Thư viện và cài đặt môi trường
 
 Dự án sử dụng Python 3.11 trở lên và Pygame để tạo cửa sổ mô phỏng, vẽ bản đồ, nhận thao tác chuột/bàn phím và chạy hoạt ảnh. Các thuật toán BFS, Dijkstra và A* sẽ dùng thư viện chuẩn của Python, nên chưa cần thêm gói bên ngoài.
 
-Danh sách phiên bản được lưu trong `requirements.txt`. Cài đặt bằng:
+Danh sách thư viện được lưu trong `requirements.txt`. Cài đặt bằng:
 
 ```powershell
 py -m pip install -r requirements.txt
