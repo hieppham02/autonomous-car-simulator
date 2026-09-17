@@ -1,4 +1,6 @@
 from collections import deque
+from heapq import heappop, heappush
+from itertools import count
 
 class Node:
     def __init__(self, position, parent=None, g=0, h=0):
@@ -31,18 +33,45 @@ def validate_grid(grid):
     if grid.is_obstacle(grid.start) or grid.is_obstacle(grid.goal):
         raise ValueError("Điểm bắt đầu hoặc điểm đích không thể là vật cản")
 
-def bfs(grid):
+def build_search_output(
+    path,
+    visited_order,
+    node_details,
+    return_visited,
+    return_details,
+):
+    if return_details:
+        return path, visited_order, node_details
+    if return_visited:
+        return path, visited_order
+    return path
+
+
+def bfs(grid, return_visited=False, return_details=False):
     validate_grid(grid)
     start_node = Node(grid.start)
 
     queue = deque([start_node])
     visited = {grid.start}
+    visited_order = []
+    node_details = []
 
     while queue:
         current_node = queue.popleft()
+        visited_order.append(current_node.position)
+        node_details.append({
+            "position": current_node.position,
+            "g": current_node.g,
+            "h": None,
+            "f": None,
+        })
 
         if current_node.position == grid.goal:
-            return Node.reconstruct_path(current_node)
+            path = Node.reconstruct_path(current_node)
+            return build_search_output(
+                path, visited_order, node_details,
+                return_visited, return_details,
+            )
 
         for neighbor_position in grid.get_neighbors(current_node.position):
             if neighbor_position not in visited:
@@ -56,14 +85,126 @@ def bfs(grid):
 
                 queue.append(neighbor_node)
 
-    return None
+    return build_search_output(
+        None, visited_order, node_details,
+        return_visited, return_details,
+    )
 
 
-def dijkstra(grid):
-    """Hàm chờ cho thuật toán Dijkstra."""
-    raise NotImplementedError("Thuật toán Dijkstra chưa được cài đặt")
+def dijkstra(grid, return_visited=False, return_details=False):
+    validate_grid(grid)
+
+    start_node = Node(grid.start)
+    priority_queue = []
+    insertion_order = count()
+    best_cost = {grid.start: 0}
+    visited_order = []
+    node_details = []
+
+    heappush(priority_queue, (0, next(insertion_order), start_node))
+
+    while priority_queue:
+        current_cost, _, current_node = heappop(priority_queue)
+
+        if current_cost != best_cost[current_node.position]:
+            continue
+
+        visited_order.append(current_node.position)
+        node_details.append({
+            "position": current_node.position,
+            "g": current_node.g,
+            "h": None,
+            "f": None,
+        })
+
+        if current_node.position == grid.goal:
+            path = Node.reconstruct_path(current_node)
+            return build_search_output(
+                path, visited_order, node_details,
+                return_visited, return_details,
+            )
+
+        for neighbor_position in grid.get_neighbors(current_node.position):
+            new_cost = current_node.g + 1
+
+            if new_cost < best_cost.get(neighbor_position, float("inf")):
+                best_cost[neighbor_position] = new_cost
+                neighbor_node = Node(
+                    position=neighbor_position,
+                    parent=current_node,
+                    g=new_cost,
+                )
+                heappush(
+                    priority_queue,
+                    (neighbor_node.g, next(insertion_order), neighbor_node),
+                )
+
+    return build_search_output(
+        None, visited_order, node_details,
+        return_visited, return_details,
+    )
 
 
-def a_star(grid):
-    """Hàm chờ cho thuật toán A*."""
-    raise NotImplementedError("Thuật toán A* chưa được cài đặt")
+def manhattan_distance(position, goal):
+    row, column = position
+    goal_row, goal_column = goal
+    return abs(row - goal_row) + abs(column - goal_column)
+
+
+def a_star(grid, return_visited=False, return_details=False):
+    validate_grid(grid)
+
+    start_h = manhattan_distance(grid.start, grid.goal)
+    start_node = Node(grid.start, h=start_h)
+    priority_queue = []
+    insertion_order = count()
+    best_cost = {grid.start: 0}
+    visited_order = []
+    node_details = []
+
+    heappush(
+        priority_queue,
+        (start_node.f, next(insertion_order), start_node),
+    )
+
+    while priority_queue:
+        _, _, current_node = heappop(priority_queue)
+
+        if current_node.g != best_cost[current_node.position]:
+            continue
+
+        visited_order.append(current_node.position)
+        node_details.append({
+            "position": current_node.position,
+            "g": current_node.g,
+            "h": current_node.h,
+            "f": current_node.f,
+        })
+
+        if current_node.position == grid.goal:
+            path = Node.reconstruct_path(current_node)
+            return build_search_output(
+                path, visited_order, node_details,
+                return_visited, return_details,
+            )
+
+        for neighbor_position in grid.get_neighbors(current_node.position):
+            new_cost = current_node.g + 1
+
+            if new_cost < best_cost.get(neighbor_position, float("inf")):
+                best_cost[neighbor_position] = new_cost
+                neighbor_node = Node(
+                    position=neighbor_position,
+                    parent=current_node,
+                    g=new_cost,
+                    h=manhattan_distance(neighbor_position, grid.goal),
+                )
+                heappush(
+                    priority_queue,
+                    (neighbor_node.f, next(insertion_order), neighbor_node),
+                )
+
+    return build_search_output(
+        None, visited_order, node_details,
+        return_visited, return_details,
+    )
