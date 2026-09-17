@@ -1,4 +1,6 @@
+import json
 import random
+from pathlib import Path
 
 import pygame
 
@@ -18,17 +20,42 @@ else:
     )
 
 
-ROWS = 25
+ROWS = 35
 COLUMNS = 50
 PATH_STEP_DELAY = 50
 SCAN_STEP_DELAY = 15
-SCAN_BATCH_SIZE = 4
+SCAN_BATCH_SIZE = 1
+ENDPOINTS_FILE = Path(__file__).resolve().parent.parent / "data" / "endpoints.json"
+
+
+def load_endpoints(rows, columns):
+    try:
+        data = json.loads(ENDPOINTS_FILE.read_text(encoding="utf-8"))
+        start = tuple(data["start"])
+        goal = tuple(data["goal"])
+        valid = lambda point: (
+            len(point) == 2
+            and 0 <= point[0] < rows
+            and 0 <= point[1] < columns
+        )
+        if valid(start) and valid(goal) and start != goal:
+            return start, goal
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return (0, 7), (20, 29)
+
+
+def save_endpoints(grid):
+    ENDPOINTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    data = {"start": list(grid.start), "goal": list(grid.goal)}
+    ENDPOINTS_FILE.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
 
 def create_demo_map():
     grid = GridMap(ROWS, COLUMNS)
-    grid.start = (0, 7)
-    grid.goal = (20, 29)
+    grid.start, grid.goal = load_endpoints(ROWS, COLUMNS)
 
     grid.obstacles.update({
         (2, 4),
@@ -39,6 +66,8 @@ def create_demo_map():
         (6, 8),
         (6, 9),
     })
+    grid.obstacles.discard(grid.start)
+    grid.obstacles.discard(grid.goal)
 
     return grid
 
@@ -52,6 +81,7 @@ def create_grid_map(rows, columns):
 
 def generate_random_street_map(grid):
     grid.obstacles.clear()
+    grid.clear_weights()
 
     road_rows = {grid.start[0], grid.goal[0]}
     road_columns = {grid.start[1], grid.goal[1]}
@@ -77,6 +107,31 @@ def generate_random_street_map(grid):
 
             if not is_road and random.random() < 0.9:
                 grid.obstacles.add(position)
+
+
+def generate_random_sparse_map(grid, density=0.12):
+    """Create scattered obstacles while keeping most of the map traversable."""
+    grid.obstacles.clear()
+    grid.clear_weights()
+    for row in range(grid.rows):
+        for column in range(grid.columns):
+            position = (row, column)
+            if position in (grid.start, grid.goal):
+                continue
+            if random.random() < density:
+                grid.obstacles.add(position)
+
+
+def generate_random_weights(grid, density=0.18):
+    """Add weighted terrain without changing the obstacle layout."""
+    grid.clear_weights()
+    for row in range(grid.rows):
+        for column in range(grid.columns):
+            position = (row, column)
+            if position in (grid.start, grid.goal) or grid.is_obstacle(position):
+                continue
+            if random.random() < density:
+                grid.set_weight(position, random.randint(2, 5))
 
 
 def edit_obstacle(grid, mouse_position, add_obstacle):
@@ -120,6 +175,7 @@ class Application:
         self.input_select_all = False
         self.grid_message = ""
         self.edit_mode = "obstacle"
+        self.random_mode = 0
 
     def map_changed(self, status):
         self.simulation.reset(self.grid, status)
@@ -200,13 +256,26 @@ class Application:
                 elif action == "random":
                     self.active_input = None
                     self.input_select_all = False
-                    generate_random_street_map(self.grid)
-                    self.map_changed("Đã tạo bản đồ ngẫu nhiên")
+                    if self.random_mode == 0:
+                        generate_random_street_map(self.grid)
+                        self.grid_message = "Đã tạo bản đồ đường phố"
+                        self.random_mode = 1
+                    else:
+                        generate_random_sparse_map(self.grid)
+                        self.grid_message = "Đã tạo chướng ngại vật mật độ thấp"
+                        self.random_mode = 0
+                    self.map_changed(self.grid_message)
+                elif action == "weights":
+                    self.active_input = None
+                    self.input_select_all = False
+                    generate_random_weights(self.grid)
+                    self.map_changed("Đã tạo trọng số ngẫu nhiên")
                 elif action == "clear":
                     self.active_input = None
                     self.input_select_all = False
                     self.grid.obstacles.clear()
-                    self.map_changed("Đã reset vật cản và đường đi")
+                    self.grid.clear_weights()
+                    self.map_changed("Đã reset vật cản, trọng số và đường đi")
                 elif action == "decrease":
                     self.active_input = None
                     self.input_select_all = False
@@ -222,6 +291,7 @@ class Application:
                     if message:
                         self.grid_message = message
                     if changed:
+                        save_endpoints(self.grid)
                         self.map_changed(message)
                         self.grid_message = message
                 elif edit_obstacle(self.grid, position, True):
@@ -237,46 +307,28 @@ class Application:
     def update(self, now):
         if self.benchmark is not None and not self.benchmark.done:
             self.benchmark.update(self.simulation, now, self.path_step_delay,
-                                  SCAN_STEP_DELAY, SCAN_BATCH_SIZE)
+                                  self.path_step_delay, SCAN_BATCH_SIZE)
         else:
-            self.simulation.update(now, self.path_step_delay, SCAN_STEP_DELAY, SCAN_BATCH_SIZE)
+            self.simulation.update(now, self.path_step_delay,
+                                   self.path_step_delay, SCAN_BATCH_SIZE)
 
 
 def main():
     pygame.init()
     app = Application()
-    desktop = pygame.display.Info()
     logical_size = layout_size()
-
-    def fitted_window_size(size):
-        width, height = size
-        scale = min(1, (desktop.current_w - 60) / width,
-                    (desktop.current_h - 100) / height)
-        return max(1, int(width * scale)), max(1, int(height * scale))
-
-    size = fitted_window_size(logical_size)
-    screen = pygame.display.set_mode(size, pygame.RESIZABLE)
+    screen = pygame.display.set_mode(logical_size)
     pygame.display.set_caption("Mô phỏng xe tìm đường tự động")
     canvas = pygame.Surface(logical_size)
     renderer = Renderer()
-    pygame.display.set_icon(renderer.car_icon)
     clock = pygame.time.Clock()
     running = True
 
     while running:
-        current_layout_size = layout_size()
-        if current_layout_size != logical_size:
-            logical_size = current_layout_size
-            canvas = pygame.Surface(logical_size)
-            screen = pygame.display.set_mode(
-                fitted_window_size(logical_size), pygame.RESIZABLE,
-            )
         viewport = window_viewport(screen.get_size(), logical_size)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            elif event.type == pygame.VIDEORESIZE:
-                viewport = window_viewport(screen.get_size(), logical_size)
             else:
                 app.handle_event(event, viewport, pygame.time.get_ticks())
         if not running:

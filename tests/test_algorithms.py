@@ -52,6 +52,26 @@ class BFSTests(unittest.TestCase):
         self.assertIsNone(dijkstra(grid))
         self.assertIsNone(a_star(grid))
 
+    def test_weighted_search_costs_are_correct(self):
+        grid = GridMap(3, 5)
+        grid.start = (1, 0)
+        grid.goal = (1, 4)
+        for column in (1, 2, 3):
+            grid.set_weight((1, column), 5)
+
+        bfs_path = bfs(grid)
+        dijkstra_path = dijkstra(grid)
+        a_star_path = a_star(grid)
+
+        def cost(path):
+            return sum(grid.weight_at(position) for position in path[1:])
+
+        self.assertEqual(len(bfs_path) - 1, 4)
+        self.assertEqual(cost(bfs_path), 16)
+        self.assertEqual(len(dijkstra_path) - 1, 6)
+        self.assertEqual(cost(dijkstra_path), 6)
+        self.assertEqual(cost(a_star_path), cost(dijkstra_path))
+
     def test_algorithms_can_return_search_order_for_animation(self):
         grid = GridMap(3, 3)
         grid.start = (0, 0)
@@ -73,8 +93,8 @@ class BFSTests(unittest.TestCase):
         _, _, bfs_details = bfs(grid, return_details=True)
         _, _, a_star_details = a_star(grid, return_details=True)
 
-        self.assertIsNone(bfs_details[0]["h"])
-        self.assertIsNone(bfs_details[0]["f"])
+        self.assertEqual(bfs_details[0]["h"], 0)
+        self.assertEqual(bfs_details[0]["f"], 0)
         self.assertEqual(a_star_details[0]["g"], 0)
         self.assertEqual(a_star_details[0]["h"], 4)
         self.assertEqual(a_star_details[0]["f"], 4)

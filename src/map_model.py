@@ -5,6 +5,7 @@ class GridMap:
         self.start = None
         self.goal = None
         self.obstacles = set()
+        self.weights = {}
 
     # Kiểm tra xem một vị trí có nằm trong bản đồ hay không
     def is_inside(self, position):
@@ -17,6 +18,22 @@ class GridMap:
     # Kiểm tra xem một vị trí có phải là vật cản hay không
     def is_obstacle(self, position):
         return position in self.obstacles
+
+    def weight_at(self, position):
+        """Return traversal cost for a cell; normal cells cost one."""
+        return max(1, self.weights.get(position, 1))
+
+    def set_weight(self, position, weight):
+        if not self.is_inside(position) or position in self.obstacles:
+            return
+        weight = max(1, int(weight))
+        if weight == 1:
+            self.weights.pop(position, None)
+        else:
+            self.weights[position] = weight
+
+    def clear_weights(self):
+        self.weights.clear()
 
     # Lấy các ô hàng xóm có thể đi đến theo 4 hướng
     def get_neighbors(self, position):

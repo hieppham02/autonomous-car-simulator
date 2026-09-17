@@ -13,6 +13,7 @@ class Simulation:
         self.reset(grid)
 
     def reset(self, grid, status="Chọn thuật toán để bắt đầu"):
+        self._grid = grid
         self.algorithm = None
         self.status = status
         self.phase = "idle"
@@ -73,8 +74,14 @@ class Simulation:
         return self.phase in ("moving", "done")
 
     @property
-    def cost(self):
+    def path_length(self):
         return len(self.path) - 1 if self.path else None
+
+    @property
+    def cost(self):
+        if not self.path:
+            return None
+        return sum(self._grid.weight_at(position) for position in self.path[1:])
 
 
 class AnimatedBenchmark:

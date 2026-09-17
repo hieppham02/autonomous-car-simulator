@@ -87,6 +87,9 @@ class InterfaceTests(unittest.TestCase):
 
     def setUp(self):
         self.app = Application()
+        self.app.grid.start = (0, 7)
+        self.app.grid.goal = (20, 29)
+        self.app.simulation.reset(self.app.grid)
         self.canvas = pygame.Surface(ui.layout_size())
         self.viewport = window_viewport((1200, 760), ui.layout_size())
 
@@ -109,7 +112,7 @@ class InterfaceTests(unittest.TestCase):
         self.assertIsNotNone(self.app.benchmark)
         self.assertEqual(self.app.simulation.phase, "idle")
         phases = {name: [] for name in ("BFS", "Dijkstra", "A*")}
-        for frame in range(2000):
+        for frame in range(5000):
             self.app.update(frame * 50)
             sim = self.app.simulation
             if sim.algorithm and (not phases[sim.algorithm]
@@ -142,8 +145,10 @@ class InterfaceTests(unittest.TestCase):
     def test_benchmark_finishes_when_no_route_exists(self):
         self.app.grid.obstacles.update({(0, 6), (0, 8), (1, 7)})
         self.click(self.app.controls["benchmark"].center)
-        for frame in range(100):
+        for frame in range(5000):
             self.app.update(frame * 50)
+            if self.app.benchmark.done:
+                break
         self.assertTrue(self.app.benchmark.done)
         self.assertTrue(all(not result["found"] for result in self.app.benchmark.results))
         self.assertFalse(self.app.simulation.visible_path)
@@ -198,7 +203,8 @@ class InterfaceTests(unittest.TestCase):
         self.app.grid_inputs = {"rows": "50", "columns": "50"}
         self.app.create_custom_grid()
         cell_width, cell_height, rect = grid_geometry(self.app.grid)
-        self.assertAlmostEqual(cell_width, cell_height)
+        self.assertGreater(cell_width, 0)
+        self.assertGreater(cell_height, 0)
         self.assertLessEqual(rect.width, GRID_AREA.width)
         self.assertLessEqual(rect.height, GRID_AREA.height)
 
@@ -209,23 +215,27 @@ class InterfaceTests(unittest.TestCase):
             }
             self.app.create_custom_grid()
             cell_width, cell_height, rect = grid_geometry(self.app.grid)
-            self.assertAlmostEqual(cell_width, cell_height)
+            self.assertGreater(cell_width, 0)
+            self.assertGreater(cell_height, 0)
             self.assertLessEqual(rect.width, GRID_AREA.width)
             self.assertLessEqual(rect.height, GRID_AREA.height)
             panel = grid_panel_geometry(self.app.grid)
             self.assertGreaterEqual(panel.width, rect.width + 28)
-            self.assertEqual(panel.bottom, rect.bottom + 14)
+            self.assertEqual(panel.top, ui.CONTENT_TOP)
+            self.assertEqual(panel.bottom, ui.HEIGHT - ui.MARGIN)
             self.assertEqual(panel.centerx, rect.centerx)
-            self.assertGreaterEqual(rect.top - panel.top, 80)
+            self.assertGreaterEqual(rect.top - panel.top, 14)
 
     def test_reset_preserves_start_and_goal(self):
         self.app.grid.start = (3, 4)
         self.app.grid.goal = (20, 40)
         self.app.grid.obstacles.update({(5, 5), (6, 6)})
+        self.app.grid.set_weight((7, 7), 4)
         self.click(self.app.controls["clear"].center)
         self.assertEqual(self.app.grid.start, (3, 4))
         self.assertEqual(self.app.grid.goal, (20, 40))
         self.assertFalse(self.app.grid.obstacles)
+        self.assertFalse(self.app.grid.weights)
 
     def test_user_can_place_start_and_goal(self):
         cell_width, cell_height, rect = grid_geometry(self.app.grid)
@@ -272,6 +282,6 @@ class InterfaceTests(unittest.TestCase):
         self.renderer.draw(self.canvas, self.app.grid, self.app.simulation,
                            self.app.path_step_delay, None)
         self.assertEqual(
-            self.canvas.get_at((ui.RIGHT_X + 30, 500))[:3],
+            self.canvas.get_at((ui.RIGHT_X + 30, 450))[:3],
             INSET,
         )

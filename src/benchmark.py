@@ -42,12 +42,16 @@ class BenchmarkRunner:
         self.completed_runs += 1
         if self.completed_runs % self.repetitions == 0:
             steps = len(path) - 1 if path is not None else None
+            cost = (
+                sum(self.grid.weight_at(position) for position in path[1:])
+                if path is not None else None
+            )
             self.results.append({
                 "algorithm": name,
                 "time_ms": self.elapsed * 1000 / self.repetitions,
                 "nodes": len(visited),
                 "path_length": steps,
-                "cost": steps,
+                "cost": cost,
                 "found": path is not None,
                 "repetitions": self.repetitions,
             })

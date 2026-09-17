@@ -62,8 +62,8 @@ def bfs(grid, return_visited=False, return_details=False):
         node_details.append({
             "position": current_node.position,
             "g": current_node.g,
-            "h": None,
-            "f": None,
+            "h": 0,
+            "f": current_node.g,
         })
 
         if current_node.position == grid.goal:
@@ -113,8 +113,8 @@ def dijkstra(grid, return_visited=False, return_details=False):
         node_details.append({
             "position": current_node.position,
             "g": current_node.g,
-            "h": None,
-            "f": None,
+            "h": 0,
+            "f": current_node.g,
         })
 
         if current_node.position == grid.goal:
@@ -125,7 +125,7 @@ def dijkstra(grid, return_visited=False, return_details=False):
             )
 
         for neighbor_position in grid.get_neighbors(current_node.position):
-            new_cost = current_node.g + 1
+            new_cost = current_node.g + grid.weight_at(neighbor_position)
 
             if new_cost < best_cost.get(neighbor_position, float("inf")):
                 best_cost[neighbor_position] = new_cost
@@ -189,7 +189,7 @@ def a_star(grid, return_visited=False, return_details=False):
             )
 
         for neighbor_position in grid.get_neighbors(current_node.position):
-            new_cost = current_node.g + 1
+            new_cost = current_node.g + grid.weight_at(neighbor_position)
 
             if new_cost < best_cost.get(neighbor_position, float("inf")):
                 best_cost[neighbor_position] = new_cost

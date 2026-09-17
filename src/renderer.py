@@ -5,11 +5,11 @@ from pathlib import Path
 import pygame
 
 
-WIDTH, HEIGHT = 1600, 850
+WIDTH, HEIGHT = 1600, 700
 MARGIN = 16
 GAP = 14
-HEADER_HEIGHT = 54
-CONTENT_TOP = MARGIN + HEADER_HEIGHT + 12
+HEADER_HEIGHT = 0
+CONTENT_TOP = MARGIN
 
 LEFT_X, LEFT_WIDTH = MARGIN, 210
 CENTER_X, CENTER_WIDTH = LEFT_X + LEFT_WIDTH + GAP, 940
@@ -18,32 +18,24 @@ RIGHT_WIDTH = WIDTH - RIGHT_X - MARGIN
 
 GRID_AREA = pygame.Rect(
     CENTER_X + 14,
-    CONTENT_TOP + 88,
+    CONTENT_TOP + 14,
     CENTER_WIDTH - 28,
-    HEIGHT - (CONTENT_TOP + 88) - MARGIN,
+    HEIGHT - CONTENT_TOP - MARGIN - 28,
 )
 
 
 def configure_layout(grid):
-    """Resize the logical UI around the current grid while keeping cells square."""
+    """Keep one fixed logical viewport for every grid size."""
     global WIDTH, HEIGHT, CENTER_WIDTH, RIGHT_X, RIGHT_WIDTH
-
-    # Fewer rows receive larger cells so a short map still uses the window
-    # efficiently; dense maps stay bounded so side panels remain readable.
-    target_cell = max(18, min(36, 660 // grid.rows))
-    CENTER_WIDTH = max(620, min(1108, grid.columns * target_cell + 28))
-    available_grid_width = CENTER_WIDTH - 28
-    cell = min(target_cell, available_grid_width / grid.columns)
-    grid_height = round(cell * grid.rows)
-    HEIGHT = max(850, CONTENT_TOP + 88 + grid_height + MARGIN)
+    WIDTH, HEIGHT = 1600, 700
+    CENTER_WIDTH = 940
     RIGHT_X = CENTER_X + CENTER_WIDTH + GAP
-    RIGHT_WIDTH = 390
-    WIDTH = RIGHT_X + RIGHT_WIDTH + MARGIN
+    RIGHT_WIDTH = WIDTH - RIGHT_X - MARGIN
     GRID_AREA.update(
         CENTER_X + 14,
-        CONTENT_TOP + 88,
+        CONTENT_TOP + 14,
         CENTER_WIDTH - 28,
-        HEIGHT - (CONTENT_TOP + 88) - MARGIN,
+        HEIGHT - CONTENT_TOP - MARGIN - 28,
     )
     return WIDTH, HEIGHT
 
@@ -66,6 +58,12 @@ DANGER_HOVER = (229, 82, 94)
 DISABLED = (222, 229, 237)
 INSET = (246, 248, 251)
 ROW_SELECTED = (232, 242, 255)
+WEIGHT_COLORS = {
+    2: (255, 245, 190),
+    3: (255, 225, 160),
+    4: (255, 200, 150),
+    5: (255, 175, 150),
+}
 WHITE = (255, 255, 255)
 
 GRID_LINE = (184, 196, 211)
@@ -92,15 +90,18 @@ def create_controls():
         "Dijkstra": pygame.Rect(x, CONTENT_TOP + 92, width, 36),
         "A*": pygame.Rect(x, CONTENT_TOP + 136, width, 36),
         "benchmark": pygame.Rect(x, CONTENT_TOP + 244, width, 38),
-        "rows_input": pygame.Rect(x + 66, CONTENT_TOP + 341, 96, 32),
-        "columns_input": pygame.Rect(x + 66, CONTENT_TOP + 381, 96, 32),
-        "apply_grid": pygame.Rect(x, CONTENT_TOP + 424, width, 36),
-        "set_start": pygame.Rect(x, CONTENT_TOP + 468, 84, 36),
-        "set_goal": pygame.Rect(x + 94, CONTENT_TOP + 468, 84, 36),
-        "random": pygame.Rect(x, CONTENT_TOP + 512, width, 36),
-        "clear": pygame.Rect(x, CONTENT_TOP + 556, width, 36),
-        "decrease": pygame.Rect(x, CONTENT_TOP + 682, 36, 34),
-        "increase": pygame.Rect(x + width - 36, CONTENT_TOP + 682, 36, 34),
+        # Kept for backward-compatible event handling; these controls are
+        # intentionally not rendered because the application uses a fixed map.
+        "rows_input": pygame.Rect(CENTER_X - 20, CONTENT_TOP + 341, 16, 32),
+        "columns_input": pygame.Rect(CENTER_X - 20, CONTENT_TOP + 381, 16, 32),
+        "apply_grid": pygame.Rect(CENTER_X - 20, CONTENT_TOP + 424, 16, 36),
+        "set_start": pygame.Rect(x, CONTENT_TOP + 362, 84, 36),
+        "set_goal": pygame.Rect(x + 94, CONTENT_TOP + 362, 84, 36),
+        "random": pygame.Rect(x, CONTENT_TOP + 406, width, 36),
+        "weights": pygame.Rect(x, CONTENT_TOP + 450, width, 36),
+        "clear": pygame.Rect(x, CONTENT_TOP + 494, width, 36),
+        "decrease": pygame.Rect(x, CONTENT_TOP + 618, 36, 34),
+        "increase": pygame.Rect(x + width - 36, CONTENT_TOP + 618, 36, 34),
     }
 
 
@@ -113,21 +114,15 @@ def grid_geometry(grid):
     height = round(cell * grid.rows)
     return cell, cell, pygame.Rect(
         GRID_AREA.centerx - width // 2,
-        GRID_AREA.y,
+        GRID_AREA.centery - height // 2,
         width,
         height,
     )
 
 
 def grid_panel_geometry(grid):
-    _, _, grid_rect = grid_geometry(grid)
-    width = min(CENTER_WIDTH, max(620, grid_rect.width + 28))
-    return pygame.Rect(
-        CENTER_X + (CENTER_WIDTH - width) // 2,
-        CONTENT_TOP,
-        width,
-        grid_rect.bottom - CONTENT_TOP + 14,
-    )
+    return pygame.Rect(CENTER_X, CONTENT_TOP, CENTER_WIDTH,
+                       HEIGHT - CONTENT_TOP - MARGIN)
 
 
 def grid_position(mouse_position, grid):
@@ -168,11 +163,19 @@ class Renderer:
         self.body = set_font(15)
         self.secondary = set_font(13)
         self.stat = set_font(15, True)
+        self.weight_font = set_font(10, True)
+        self.weight_labels = {
+            value: self.weight_font.render(str(value), True, TEXT)
+            for value in range(2, 6)
+        }
 
         path = Path(__file__).resolve().parent.parent / "assets" / "car-topdown.png"
         source = pygame.image.load(str(path)).convert_alpha()
         self.car_source = source.subsurface(source.get_bounding_rect()).copy()
         self.car_icon = pygame.transform.smoothscale(self.car_source, (18, 40))
+        flag_path = Path(__file__).resolve().parent.parent / "assets" / "finish-flag.png"
+        flag_source = pygame.image.load(str(flag_path)).convert_alpha()
+        self.flag_source = flag_source.subsurface(flag_source.get_bounding_rect()).copy()
         self.car_cache = {}
         self.controls = create_controls()
         self.mouse_position = (-1, -1)
@@ -267,21 +270,36 @@ class Renderer:
                 x2 = rect.x + round((column + 1) * cell_width)
                 y2 = rect.y + round((row + 1) * cell_height)
                 cell_rect = pygame.Rect(x1, y1, x2 - x1, y2 - y1)
-                color = WHITE
+                weight = grid.weight_at(position)
+                is_obstacle = grid.is_obstacle(position)
+                color = WEIGHT_COLORS.get(weight, WHITE)
                 if position == grid.start:
                     color = GREEN
                 elif position == grid.goal:
-                    color = RED
-                elif grid.is_obstacle(position):
+                    color = WHITE
+                elif is_obstacle:
                     color = BLACK
                 elif position in simulation.visible_path:
                     color = YELLOW
                 elif position in simulation.scanned_cells:
                     color = SCANNED_BLUE
                 pygame.draw.rect(screen, color, cell_rect)
-                if (not grid.is_obstacle(position)
+                if (not is_obstacle
                         and min(cell_width, cell_height) >= 3):
                     pygame.draw.rect(screen, GRID_LINE, cell_rect, 1)
+                if position == grid.goal:
+                    flag_size = max(2, round(min(cell_width, cell_height) - 2))
+                    flag = pygame.transform.smoothscale(
+                        self.flag_source, (flag_size, flag_size)
+                    )
+                    screen.blit(flag, flag.get_rect(center=cell_rect.center))
+                elif (weight > 1
+                      and not is_obstacle
+                      and min(cell_width, cell_height) >= 10):
+                    label = self.weight_labels.get(weight)
+                    if label is None:
+                        label = self.weight_font.render(str(weight), True, TEXT)
+                    screen.blit(label, label.get_rect(center=cell_rect.center))
 
         if simulation.car_position is not None:
             row, column = simulation.car_position
@@ -296,18 +314,7 @@ class Renderer:
         pygame.draw.rect(screen, CARD_BORDER, rect, 1)
 
     def draw_map_card(self, screen, grid, simulation):
-        panel = self.draw_card(screen, grid_panel_geometry(grid))
-        self.draw_text(screen, "Bản đồ mô phỏng",
-                       (panel.x + 16, panel.y + 13), font=self.panel_title)
-        info = self.secondary.render(
-            f"{grid.rows} hàng × {grid.columns} cột  •  4 hướng", True, MUTED
-        )
-        screen.blit(info, info.get_rect(topright=(panel.right - 16, panel.y + 17)))
-        self.draw_text(
-            screen,
-            "Chuột trái: thêm vật cản   •   Chuột phải: xóa vật cản",
-            (panel.x + 16, panel.y + 49), SECONDARY_TEXT, self.secondary,
-        )
+        self.draw_card(screen, grid_panel_geometry(grid))
         self.draw_grid(screen, grid, simulation)
 
     def draw_algorithm_card(self, screen, simulation):
@@ -329,35 +336,25 @@ class Renderer:
         )
 
         edit_y = CONTENT_TOP + 304
-        self.draw_card(screen, (LEFT_X, edit_y, LEFT_WIDTH, 318),
+        self.draw_card(screen, (LEFT_X, edit_y, LEFT_WIDTH, 242),
                        "Tạo và sửa bản đồ")
-        self.draw_text(screen, "Hàng", (LEFT_X + 16, CONTENT_TOP + 349),
-                       SECONDARY_TEXT, self.secondary)
-        self.draw_text(screen, "Cột", (LEFT_X + 16, CONTENT_TOP + 389),
-                       SECONDARY_TEXT, self.secondary)
-        self.draw_input(screen, "rows_input", grid_inputs["rows"],
-                        active_input == "rows_input",
-                        select_all and active_input == "rows_input")
-        self.draw_input(screen, "columns_input", grid_inputs["columns"],
-                        active_input == "columns_input",
-                        select_all and active_input == "columns_input")
-        self.draw_button(screen, "apply_grid", "Tạo grid map", style="primary")
         self.draw_button(screen, "set_start", "Đặt Start",
                          selected=edit_mode == "start")
         self.draw_button(screen, "set_goal", "Đặt Goal",
                          selected=edit_mode == "goal")
         self.draw_button(screen, "random", "Tạo ngẫu nhiên")
+        self.draw_button(screen, "weights", "Tạo trọng số")
         self.draw_button(screen, "clear", "Reset bản đồ", style="danger")
-        message = grid_message or "Giới hạn: hàng 5–50, cột 5–80"
-        color = DANGER if message.startswith("Lỗi") else SECONDARY_TEXT
-        self.draw_text(screen, message, (LEFT_X + 16, CONTENT_TOP + 600),
-                       color, self.secondary)
 
-        speed_y = CONTENT_TOP + 636
-        self.draw_card(screen, (LEFT_X, speed_y, LEFT_WIDTH, 108), "Tốc độ xe")
+        speed_y = CONTENT_TOP + 560
+        self.draw_card(
+            screen,
+            (LEFT_X, speed_y, LEFT_WIDTH, 108),
+            "Tốc độ thuật toán",
+        )
         self.draw_button(screen, "decrease", "−")
         self.draw_button(screen, "increase", "+")
-        value_rect = pygame.Rect(LEFT_X + 69, CONTENT_TOP + 682, 72, 34)
+        value_rect = pygame.Rect(LEFT_X + 69, CONTENT_TOP + 618, 72, 34)
         pygame.draw.rect(screen, INSET, value_rect, border_radius=6)
         value = self.button_bold.render(f"{delay} ms", True, TEXT)
         screen.blit(value, value.get_rect(center=value_rect.center))
@@ -368,13 +365,17 @@ class Renderer:
             "Kết quả lần chạy",
         )
         show_result = simulation.result_visible
+        path_length = (
+            simulation.path_length
+            if show_result and simulation.path_length is not None else "—"
+        )
         cost = simulation.cost if show_result and simulation.cost is not None else "—"
         time = f"{simulation.time_ms:.3f} ms" if show_result else "—"
         values = (
             ("Thuật toán", simulation.algorithm or "—"),
-            ("Tìm đường", time),
+            ("Thời gian", time),
             ("Node đã quét", simulation.scan_index),
-            ("Độ dài đường đi", cost),
+            ("Độ dài đường đi", path_length),
             ("Tổng chi phí", cost),
         )
         for index, (label, value) in enumerate(values):
@@ -405,22 +406,30 @@ class Renderer:
             "Benchmark",
         )
         if benchmark is None:
+            # self.draw_text(screen, "Chưa có kết quả",
+            #                (rect.x + 18, rect.y + 61), font=self.button_bold)
+            # self.draw_text(
+            #     screen, "Chạy benchmark để so sánh BFS, Dijkstra và A*.",
+            #     (rect.x + 18, rect.y + 93), SECONDARY_TEXT, self.secondary,
+            # )
+            # flow = pygame.Rect(rect.x + 18, rect.y + 133,
+            #                    rect.width - 36, 44)
+            # pygame.draw.rect(screen, INSET, flow, border_radius=7)
+            # rendered = self.button_bold.render(
+            #     "BFS   →   Dijkstra   →   A*", True, TEXT
+            # )
+            # screen.blit(rendered, rendered.get_rect(center=flow.center))
+            # self.draw_text(screen, "Quét → di chuyển → thuật toán kế tiếp",
+            #                (rect.x + 18, rect.y + 204), MUTED, self.secondary)
             self.draw_text(screen, "Chưa có kết quả",
                            (rect.x + 18, rect.y + 61), font=self.button_bold)
-            self.draw_text(
-                screen, "Chạy benchmark để so sánh BFS, Dijkstra và A*.",
-                (rect.x + 18, rect.y + 93), SECONDARY_TEXT, self.secondary,
-            )
-            flow = pygame.Rect(rect.x + 18, rect.y + 133, rect.width - 36, 44)
+            flow = pygame.Rect(rect.x + 18, rect.y + 133,
+                               rect.width - 36, 44)
             pygame.draw.rect(screen, INSET, flow, border_radius=7)
             rendered = self.button_bold.render(
                 "BFS   →   Dijkstra   →   A*", True, TEXT
             )
             screen.blit(rendered, rendered.get_rect(center=flow.center))
-            self.draw_text(
-                screen, "Quét → di chuyển → thuật toán kế tiếp",
-                (rect.x + 18, rect.y + 204), MUTED, self.secondary,
-            )
             return
 
         if not benchmark.done:
@@ -442,22 +451,25 @@ class Renderer:
                            self.secondary)
             return
 
-        table = pygame.Rect(rect.x + 12, rect.y + 50, rect.width - 24, 205)
+        table = pygame.Rect(rect.x + 12, rect.y + 50,
+                            rect.width - 24, max(128, rect.height - 62))
         column_widths = (104, 68, 62, 58, 52)
         column_x = [table.x]
         for width in column_widths[:-1]:
             column_x.append(column_x[-1] + width)
-        header = pygame.Rect(table.x, table.y, table.width, 37)
+        header_height = 30
+        header = pygame.Rect(table.x, table.y, table.width, header_height)
         pygame.draw.rect(screen, SECONDARY_BUTTON, header, border_radius=6)
         headers = ("Thuật toán", "Time (ms)", "Nodes", "Path", "Cost")
         for index, title in enumerate(headers):
             align = "left" if index == 0 else "center"
-            self._draw_table_cell(screen, title, column_x[index], table.y + 10,
+            self._draw_table_cell(screen, title, column_x[index], table.y + 7,
                                   column_widths[index], align, MUTED)
 
+        row_height = (table.height - header_height) // max(1, len(benchmark.results))
         for index, result in enumerate(benchmark.results):
-            y = table.y + 37 + index * 47
-            row = pygame.Rect(table.x, y, table.width, 46)
+            y = table.y + header_height + index * row_height
+            row = pygame.Rect(table.x, y, table.width, row_height)
             if result["algorithm"] == selected_algorithm:
                 pygame.draw.rect(screen, ROW_SELECTED, row, border_radius=5)
             pygame.draw.line(screen, CARD_BORDER,
@@ -474,8 +486,6 @@ class Renderer:
                     screen, value, column_x[cell_index], y + 14,
                     column_widths[cell_index], align, TEXT,
                 )
-        self.draw_text(screen, "20 lượt / thuật toán  •  không tính animation",
-                       (rect.x + 18, rect.bottom - 31), MUTED, self.secondary)
 
     def _draw_table_cell(self, screen, value, x, y, width, align, color):
         rendered = self.secondary.render(str(value), True, color)
@@ -492,13 +502,16 @@ class Renderer:
         )
         entries = (
             (GREEN, "Điểm đầu"), (SCANNED_BLUE, "Ô đã quét"),
-            (RED, "Điểm đích"), (YELLOW, "Đường đã đi"),
+            ("flag", "Điểm đích"), (YELLOW, "Đường đã đi"),
             (BLACK, "Vật cản"), (None, "Xe"),
         )
         for index, (color, label) in enumerate(entries):
             x = rect.x + 18 + (index % 2) * ((rect.width - 36) // 2)
             y = rect.y + 49 + (index // 2) * 31
-            if color is None:
+            if color == "flag":
+                icon = pygame.transform.smoothscale(self.flag_source, (18, 18))
+                screen.blit(icon, (x, y))
+            elif color is None:
                 icon = pygame.transform.smoothscale(self.car_icon, (9, 20))
                 screen.blit(icon, (x + 4, y - 2))
             else:
@@ -517,7 +530,6 @@ class Renderer:
             "rows": str(grid.rows), "columns": str(grid.columns),
         }
         screen.fill(BACKGROUND)
-        self.draw_header(screen)
         self.draw_algorithm_card(screen, simulation)
         self.draw_control_cards(
             screen, simulation, delay, benchmark, grid_inputs,
