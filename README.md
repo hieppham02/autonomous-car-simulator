@@ -2,6 +2,8 @@
 
 Bài tập lớn môn Trí tuệ nhân tạo: mô phỏng xe di chuyển trên bản đồ dạng lưới, lập kế hoạch đường đi bằng BFS, Dijkstra hoặc A*, sau đó trực quan hóa và so sánh kết quả.
 
+<img width="1602" height="732" alt="image" src="https://github.com/user-attachments/assets/d0ab7941-4170-48a6-906e-421f6984f027" />
+
 ## Trạng thái
 
 Đã có mô phỏng Pygame với BFS, Dijkstra và A*: quét node, tìm đường rồi cho xe di chuyển. Giao diện gồm panel điều khiển bên trái, bản đồ ở giữa và kết quả/benchmark bên phải.
