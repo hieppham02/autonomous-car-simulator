@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="1640" viewBox="0 0 1000 1640">
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#374151"/></marker></defs>
+<rect width="1000" height="1640" fill="white"/>
+<style>text{font-family:Arial,'DejaVu Sans',sans-serif;font-size:19px;fill:#17212b;text-anchor:middle} .line{fill:none;stroke:#374151;stroke-width:2;marker-end:url(#arrow)} .box{fill:#fff0b3;stroke:#374151;stroke-width:2} .io{fill:#dceaf7;stroke:#374151;stroke-width:2} .decision{fill:#fad9b5;stroke:#374151;stroke-width:2} .end{fill:#f6d4d8;stroke:#374151;stroke-width:2} .label{font-size:17px}</style>
+<text x="500" y="32" font-weight="bold">SƠ ĐỒ KHỐI MÔ PHỎNG XE TÌM ĐƯỜNG</text>
+<ellipse class="end" cx="500" cy="80" rx="100" ry="28"/><text x="500" y="87">Bắt đầu</text>
+<path class="line" d="M500 108V135"/>
+<rect class="box" x="300" y="135" width="400" height="60"/><text x="500" y="160">Khởi tạo giao diện, bản đồ</text><text x="500" y="183">và đọc Start, Goal đã lưu</text>
+<path class="line" d="M500 195V225"/>
+<polygon class="io" points="320,225 720,225 680,295 280,295"/><text x="500" y="251">Thiết lập Start, Goal, vật cản, trọng số</text><text x="500" y="277">Chọn BFS, Dijkstra hoặc A*</text>
+<path class="line" d="M500 295V325"/>
+<polygon class="decision" points="500,325 670,390 500,455 330,390"/><text x="500" y="397">Bản đồ hợp lệ?</text>
+<path class="line" d="M330 390H190V260H280"/><text class="label" x="235" y="377">Không</text><text class="label" x="100" y="315">Thông báo lỗi</text>
+<path class="line" d="M500 455V490"/><text class="label" x="530" y="478">Có</text>
+<rect class="box" x="300" y="490" width="400" height="70"/><text x="500" y="516">Thực hiện thuật toán; lưu thứ tự duyệt</text><text x="500" y="542">và đường đi nếu tìm thấy đích</text>
+<path class="line" d="M500 560V595"/>
+<rect class="box" x="300" y="595" width="400" height="60"/><text x="500" y="620">Khởi tạo pha quét trực quan</text><text x="500" y="644">từ danh sách node đã duyệt</text>
+<path class="line" d="M500 655V690"/>
+<rect class="box" x="300" y="690" width="400" height="60"/><text x="500" y="715">Hiển thị node tiếp theo</text><text x="500" y="739">Cập nhật tọa độ, g, h, f</text>
+<path class="line" d="M500 750V780"/>
+<polygon class="decision" points="500,780 690,850 500,920 310,850"/><text x="500" y="844">Đã hiển thị hết</text><text x="500" y="869">node đã duyệt?</text>
+<path class="line" d="M310 850H220V720H300"/><text class="label" x="257" y="837">Không</text>
+<path class="line" d="M500 920V950"/><text class="label" x="530" y="942">Có</text>
+<polygon class="decision" points="500,950 670,1015 500,1080 330,1015"/><text x="500" y="1022">Có đường đến Goal?</text>
+<path class="line" d="M670 1015H835V1375"/><text class="label" x="739" y="1002">Không</text>
+<polygon class="io" points="745,1375 955,1375 925,1445 715,1445"/><text x="835" y="1402">Thông báo không</text><text x="835" y="1427">tìm thấy đường</text>
+<path class="line" d="M500 1080V1110"/><text class="label" x="530" y="1102">Có</text>
+<rect class="box" x="300" y="1110" width="400" height="60"/><text x="500" y="1135">Di chuyển xe một bước theo đường đi</text><text x="500" y="1159">Cập nhật hướng xe và đường màu vàng</text>
+<path class="line" d="M500 1170V1200"/>
+<polygon class="decision" points="500,1200 670,1265 500,1330 330,1265"/><text x="500" y="1272">Xe đã đến Goal?</text>
+<path class="line" d="M330 1265H220V1140H300"/><text class="label" x="260" y="1252">Không</text>
+<path class="line" d="M500 1330V1375"/><text class="label" x="530" y="1357">Có</text>
+<polygon class="io" points="320,1375 720,1375 680,1445 280,1445"/><text x="500" y="1402">Hiển thị thời gian, số node đã duyệt,</text><text x="500" y="1427">độ dài đường đi và tổng chi phí</text>
+<path class="line" d="M500 1445V1480"/>
+<path class="line" d="M835 1445V1540H670"/>
+<polygon class="decision" points="500,1480 670,1540 500,1600 330,1540"/><text x="500" y="1547">Tiếp tục mô phỏng?</text>
+<path class="line" d="M330 1540H50V260H280"/><text class="label" x="270" y="1527">Có</text>
+<path class="line" d="M500 1600V1620H805"/><text class="label" x="680" y="1608">Không</text>
+<ellipse class="end" cx="880" cy="1608" rx="75" ry="26"/><text x="880" y="1615">Kết thúc</text>
+</svg>
